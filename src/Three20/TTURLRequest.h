@@ -22,6 +22,7 @@
   BOOL _isLoading;
   BOOL _shouldHandleCookies;
   BOOL _respondedFromCache;
+  BOOL _multipartForm;
 }
 
 /**
@@ -68,6 +69,11 @@
  * Defaults to "any".
  */
 @property(nonatomic) TTURLRequestCachePolicy cachePolicy;
+
+/**
+ * Use HTTP form multipart posts. Defaults to "NO".
+ */
+@property(nonatomic) BOOL multipartForm;
 
 /**
  * The maximum age of cached data that can be used as a response.

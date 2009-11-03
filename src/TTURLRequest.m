@@ -17,7 +17,7 @@ static NSString* kStringBoundary = @"3i2ndDfv2rTHiSisAbouNdArYfORhtTPEefj3q2f";
   timestamp = _timestamp, userInfo = _userInfo, isLoading = _isLoading,
   shouldHandleCookies = _shouldHandleCookies, totalBytesLoaded = _totalBytesLoaded,
   totalBytesExpected = _totalBytesExpected, respondedFromCache = _respondedFromCache,
-  headers = _headers;
+  headers = _headers, multipartForm = _multipartForm;
 
 + (TTURLRequest*)request {
   return [[[TTURLRequest alloc] init] autorelease];
@@ -115,24 +115,24 @@ static NSString* kStringBoundary = @"3i2ndDfv2rTHiSisAbouNdArYfORhtTPEefj3q2f";
   }
 }
 
-- (NSData*)generatePostBody {
+- (NSData *)generateMultipartBody {
   NSMutableData *body = [NSMutableData data];
   NSString *beginLine = [NSString stringWithFormat:@"\r\n--%@\r\n", kStringBoundary];
-
+  
   [body appendData:[[NSString stringWithFormat:@"--%@\r\n", kStringBoundary]
-    dataUsingEncoding:NSUTF8StringEncoding]];
+                    dataUsingEncoding:NSUTF8StringEncoding]];
   
   for (id key in [_parameters keyEnumerator]) {
     NSString* value = [_parameters valueForKey:key];
     if (![value isKindOfClass:[UIImage class]]) {
       [body appendData:[beginLine dataUsingEncoding:NSUTF8StringEncoding]];        
       [body appendData:[[NSString
-        stringWithFormat:@"Content-Disposition: form-data; name=\"%@\"\r\n\r\n", key]
-          dataUsingEncoding:NSUTF8StringEncoding]];
+                         stringWithFormat:@"Content-Disposition: form-data; name=\"%@\"\r\n\r\n", key]
+                        dataUsingEncoding:NSUTF8StringEncoding]];
       [body appendData:[value dataUsingEncoding:NSUTF8StringEncoding]];
     }
   }
-
+  
   NSString* imageKey = nil;
   for (id key in [_parameters keyEnumerator]) {
     if ([[_parameters objectForKey:key] isKindOfClass:[UIImage class]]) {
@@ -142,15 +142,15 @@ static NSString* kStringBoundary = @"3i2ndDfv2rTHiSisAbouNdArYfORhtTPEefj3q2f";
       
       [body appendData:[beginLine dataUsingEncoding:NSUTF8StringEncoding]];
       [body appendData:[[NSString stringWithFormat:
-                       @"Content-Disposition: form-data; name=\"%@\"; filename=\"image.jpg\"\r\n",
-                       key]
-          dataUsingEncoding:NSUTF8StringEncoding]];
+                         @"Content-Disposition: form-data; name=\"%@\"; filename=\"image.jpg\"\r\n",
+                         key]
+                        dataUsingEncoding:NSUTF8StringEncoding]];
       [body appendData:[[NSString
-        stringWithFormat:@"Content-Length: %d\r\n", data.length]
-          dataUsingEncoding:NSUTF8StringEncoding]];  
+                         stringWithFormat:@"Content-Length: %d\r\n", data.length]
+                        dataUsingEncoding:NSUTF8StringEncoding]];  
       [body appendData:[[NSString
-        stringWithString:@"Content-Type: image/jpeg\r\n\r\n"]
-          dataUsingEncoding:NSUTF8StringEncoding]];  
+                         stringWithString:@"Content-Type: image/jpeg\r\n\r\n"]
+                        dataUsingEncoding:NSUTF8StringEncoding]];  
       [body appendData:data];
       imageKey = key;
     }
@@ -160,30 +160,55 @@ static NSString* kStringBoundary = @"3i2ndDfv2rTHiSisAbouNdArYfORhtTPEefj3q2f";
     NSData* data = [_files objectAtIndex:i];
     NSString* mimeType = [_files objectAtIndex:i+1];
     NSString* fileName = [_files objectAtIndex:i+2];
-      
+    
     [body appendData:[beginLine dataUsingEncoding:NSUTF8StringEncoding]];
     [body appendData:[[NSString stringWithFormat:
                        @"Content-Disposition: form-data; name=\"%@\"; filename=\"%@\"\r\n",
                        fileName, fileName]
-          dataUsingEncoding:NSUTF8StringEncoding]];
+                      dataUsingEncoding:NSUTF8StringEncoding]];
     [body appendData:[[NSString stringWithFormat:@"Content-Length: %d\r\n", data.length]
-          dataUsingEncoding:NSUTF8StringEncoding]];  
+                      dataUsingEncoding:NSUTF8StringEncoding]];  
     [body appendData:[[NSString stringWithFormat:@"Content-Type: %@\r\n\r\n", mimeType]
-          dataUsingEncoding:NSUTF8StringEncoding]];  
+                      dataUsingEncoding:NSUTF8StringEncoding]];  
     [body appendData:data];
   }
-
+  
   [body appendData:[[NSString stringWithFormat:@"\r\n--%@--\r\n", kStringBoundary]
-                   dataUsingEncoding:NSUTF8StringEncoding]];
-
+                    dataUsingEncoding:NSUTF8StringEncoding]];
+  
   // If an image was found, remove it from the dictionary to save memory while we
   // perform the upload
   if (imageKey) {
     [_parameters removeObjectForKey:imageKey];
   }
-
+  
   //TTLOG(@"Sending %s", [body bytes]);
   return body;
+}
+
+- (NSData *)generateURLEncodedBody {
+  NSMutableString *body = [NSMutableString string];
+  for (NSString *key in [_parameters allKeys]) {
+    if (body.length > 0)
+      [body appendString:@"&"];
+    [body appendString:[NSString stringWithFormat:@"%@=%@", 
+                        [key stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding], 
+                        [[_parameters objectForKey:key] stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding]]];
+  }
+  return [body dataUsingEncoding:NSUTF8StringEncoding];
+}
+
+
+- (NSData*)generatePostBody {
+  if (self.multipartForm)
+    return [self generateMultipartBody];
+  else
+    return [self generateURLEncodedBody];
+}
+
+- (BOOL)hasHTTPBody {
+  NSString *method = [_httpMethod uppercaseString];
+  return [method isEqualToString:@"POST"] || [method isEqualToString:@"PUT"] || [method isEqualToString:@"DELETE"];
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -198,7 +223,7 @@ static NSString* kStringBoundary = @"3i2ndDfv2rTHiSisAbouNdArYfORhtTPEefj3q2f";
 - (NSData*)httpBody {
   if (_httpBody) {
     return _httpBody;
-  } else if ([[_httpMethod uppercaseString] isEqualToString:@"POST"] || [[_httpMethod uppercaseString] isEqualToString:@"PUT"]) {
+  } else if ([self hasHTTPBody]) {
     return [self generatePostBody];
   } else {
     return nil;
@@ -208,8 +233,11 @@ static NSString* kStringBoundary = @"3i2ndDfv2rTHiSisAbouNdArYfORhtTPEefj3q2f";
 - (NSString*)contentType {
   if (_contentType) {
     return _contentType;
-  } else if ([_httpMethod isEqualToString:@"POST"] || [_httpMethod isEqualToString:@"PUT"]) {
-    return [NSString stringWithFormat:@"multipart/form-data; boundary=%@", kStringBoundary];
+  } else if ([self hasHTTPBody]) {
+    if (self.multipartForm)
+      return [NSString stringWithFormat:@"multipart/form-data; boundary=%@", kStringBoundary];
+    else
+      return @"application/x-www-form-urlencoded";
   } else {
     return nil;
   }
