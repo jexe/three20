@@ -187,6 +187,8 @@ static TTURLRequestQueue* gMainQueue = nil;
       withObject:_response withObject:_responseData];
   } else {
     TTLOG(@"  FAILED LOADING (%d) %@", _response.statusCode, _URL);
+      NSString *responseString = [[NSString alloc] initWithData:_responseData encoding:NSUTF8StringEncoding];
+      TTLOG(@"Response data: %@", [responseString autorelease]);
     NSError* error = [NSError errorWithDomain:NSURLErrorDomain code:_response.statusCode
       userInfo:nil];
     [_queue performSelector:@selector(loader:didFailLoadWithError:) withObject:self
@@ -535,7 +537,7 @@ static TTURLRequestQueue* gMainQueue = nil;
   request.isLoading = YES;
   
   TTRequestLoader* loader = nil;
-  if (![request.httpMethod isEqualToString:@"POST"]) {
+  if (![request.httpMethod isEqualToString:@"POST"] && ![request.httpMethod isEqualToString:@"PUT"]) {
     // Next, see if there is an active loader for the URL and if so join that bandwagon
     loader = [_loaders objectForKey:request.cacheKey];
     if (loader) {
