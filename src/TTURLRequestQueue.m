@@ -182,19 +182,19 @@ static TTURLRequestQueue* gMainQueue = nil;
 - (void)connectionDidFinishLoading:(NSURLConnection *)connection {
   TTNetworkRequestStopped();
 
-  if (_response.statusCode == 200) {
+  if (_response.statusCode < 300) {
     [_queue performSelector:@selector(loader:didLoadResponse:data:) withObject:self
-      withObject:_response withObject:_responseData];
+                 withObject:_response withObject:_responseData];
   } else {
     TTLOG(@"  FAILED LOADING (%d) %@", _response.statusCode, _URL);
-      NSString *responseString = [[NSString alloc] initWithData:_responseData encoding:NSUTF8StringEncoding];
-      TTLOG(@"Response data: %@", [responseString autorelease]);
+    NSString *responseString = [[NSString alloc] initWithData:_responseData encoding:NSUTF8StringEncoding];
+    TTLOG(@"Response data: %@", [responseString autorelease]);
     NSError* error = [NSError errorWithDomain:NSURLErrorDomain code:_response.statusCode
-      userInfo:nil];
+                                     userInfo:nil];
     [_queue performSelector:@selector(loader:didFailLoadWithError:) withObject:self
-      withObject:error];
+                 withObject:error];
   }
-
+  
   TT_RELEASE_SAFELY(_responseData);
   TT_RELEASE_SAFELY(_connection);
 }
