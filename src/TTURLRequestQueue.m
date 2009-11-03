@@ -18,6 +18,20 @@ static TTURLRequestQueue* gMainQueue = nil;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 
+@class TTRequestLoader;
+
+@interface TTURLRequestQueue (LocalMethods)
+
+- (void)loader:(TTRequestLoader*)loader didLoadResponse:(NSHTTPURLResponse*)response data:(id)data;
+- (void)loader:(TTRequestLoader*)loader didFailLoadWithError:(NSError*)error;
+- (void)loaderDidCancel:(TTRequestLoader*)loader wasLoading:(BOOL)wasLoading;
+
+@end
+
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////
+
 @interface TTRequestLoader : NSObject {
   NSString* _URL;
   TTURLRequestQueue* _queue;
@@ -47,6 +61,8 @@ static TTURLRequestQueue* gMainQueue = nil;
 - (BOOL)cancel:(TTURLRequest*)request;
 
 @end
+
+
 
 @implementation TTRequestLoader
 
@@ -183,16 +199,14 @@ static TTURLRequestQueue* gMainQueue = nil;
   TTNetworkRequestStopped();
 
   if (_response.statusCode < 300) {
-    [_queue performSelector:@selector(loader:didLoadResponse:data:) withObject:self
-                 withObject:_response withObject:_responseData];
+    [_queue loader:self didLoadResponse:_response data:_responseData];
   } else {
     TTLOG(@"  FAILED LOADING (%d) %@", _response.statusCode, _URL);
     NSString *responseString = [[NSString alloc] initWithData:_responseData encoding:NSUTF8StringEncoding];
     TTLOG(@"Response data: %@", [responseString autorelease]);
     NSError* error = [NSError errorWithDomain:NSURLErrorDomain code:_response.statusCode
                                      userInfo:nil];
-    [_queue performSelector:@selector(loader:didFailLoadWithError:) withObject:self
-                 withObject:error];
+    [_queue loader:self didFailLoadWithError:error];
   }
   
   TT_RELEASE_SAFELY(_responseData);
@@ -214,8 +228,7 @@ static TTURLRequestQueue* gMainQueue = nil;
     --_retriesLeft;
     [self load:[NSURL URLWithString:_URL]];
   } else {
-    [_queue performSelector:@selector(loader:didFailLoadWithError:) withObject:self
-            withObject:error];
+    [_queue loader:self didFailLoadWithError:error];
   }
 }
 
@@ -253,8 +266,7 @@ static TTURLRequestQueue* gMainQueue = nil;
     [_requests removeObjectAtIndex:index];
   }
   if (![_requests count]) {
-    [_queue performSelector:@selector(loaderDidCancel:wasLoading:) withObject:self
-            withObject:(id)!!_connection];
+    [_queue loaderDidCancel:self wasLoading:(_connection != nil)];
     if (_connection) {
       TTNetworkRequestStopped();
       [_connection cancel];
