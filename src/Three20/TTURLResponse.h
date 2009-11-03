@@ -12,6 +12,16 @@
 - (NSError*)request:(TTURLRequest*)request processResponse:(NSHTTPURLResponse*)response
             data:(id)data;
 
+@optional
+
+/**
+ * Processes the data from an unsuccessful request.
+ * 
+ */
+- (void)request:(TTURLRequest*)request processResponse:(NSHTTPURLResponse*)response 
+      withError:(NSError *)error
+           data:(id)data;
+
 @end
 
 @interface TTURLDataResponse : NSObject <TTURLResponse> {

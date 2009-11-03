@@ -23,7 +23,7 @@ static TTURLRequestQueue* gMainQueue = nil;
 @interface TTURLRequestQueue (LocalMethods)
 
 - (void)loader:(TTRequestLoader*)loader didLoadResponse:(NSHTTPURLResponse*)response data:(id)data;
-- (void)loader:(TTRequestLoader*)loader didFailLoadWithError:(NSError*)error;
+- (void)loader:(TTRequestLoader*)loader didFailLoadWithError:(NSError*)error response:(NSHTTPURLResponse*)response data:(id)data;
 - (void)loaderDidCancel:(TTRequestLoader*)loader wasLoading:(BOOL)wasLoading;
 
 @end
@@ -153,7 +153,12 @@ static TTURLRequestQueue* gMainQueue = nil;
   }
 }
 
-- (void)dispatchError:(NSError*)error {
+- (void)dispatchError:(NSError*)error response:(NSHTTPURLResponse *)response data:(id)data {
+  for (TTURLRequest* request in _requests) {
+    if ([request.response respondsToSelector:@selector(request:processResponse:withError:data:)])
+      [request.response request:request processResponse:response withError:error data:data];
+  }
+
   for (TTURLRequest* request in [[_requests copy] autorelease]) {
     request.isLoading = NO;
 
@@ -202,11 +207,9 @@ static TTURLRequestQueue* gMainQueue = nil;
     [_queue loader:self didLoadResponse:_response data:_responseData];
   } else {
     TTLOG(@"  FAILED LOADING (%d) %@", _response.statusCode, _URL);
-    NSString *responseString = [[NSString alloc] initWithData:_responseData encoding:NSUTF8StringEncoding];
-    TTLOG(@"Response data: %@", [responseString autorelease]);
     NSError* error = [NSError errorWithDomain:NSURLErrorDomain code:_response.statusCode
                                      userInfo:nil];
-    [_queue loader:self didFailLoadWithError:error];
+    [_queue loader:self didFailLoadWithError:error response:_response data:_responseData];
   }
   
   TT_RELEASE_SAFELY(_responseData);
@@ -228,7 +231,7 @@ static TTURLRequestQueue* gMainQueue = nil;
     --_retriesLeft;
     [self load:[NSURL URLWithString:_URL]];
   } else {
-    [_queue loader:self didFailLoadWithError:error];
+    [_queue loader:self didFailLoadWithError:error response:_response data:_responseData];
   }
 }
 
@@ -395,6 +398,9 @@ static TTURLRequestQueue* gMainQueue = nil;
 
       if (!error) {
         error = [request.response request:request processResponse:nil data:data];
+      } else {
+        if ([request respondsToSelector:@selector(request:processResponse:withError:data:)])
+          [request.response request:request processResponse:nil withError:error data:data];
       }
       
       if (error) {
@@ -437,7 +443,7 @@ static TTURLRequestQueue* gMainQueue = nil;
       error = [loader processResponse:nil data:data];
     }
     if (error) {
-      [loader dispatchError:error];
+      [loader dispatchError:error response:nil data:data];
     } else {
       [loader dispatchLoaded:timestamp];
     }
@@ -483,7 +489,7 @@ static TTURLRequestQueue* gMainQueue = nil;
   
   NSError* error = [loader processResponse:response data:data];
   if (error) {
-    [loader dispatchError:error];
+    [loader dispatchError:error response:response data:data];
   } else {
     if (!(loader.cachePolicy & TTURLRequestCachePolicyNoCache)) {
       [[TTURLCache sharedCache] storeData:data forKey:loader.cacheKey];
@@ -495,10 +501,10 @@ static TTURLRequestQueue* gMainQueue = nil;
   [self loadNextInQueue];
 }
 
-- (void)loader:(TTRequestLoader*)loader didFailLoadWithError:(NSError*)error {
+- (void)loader:(TTRequestLoader*)loader didFailLoadWithError:(NSError*)error response:(NSHTTPURLResponse*)response data:(id)data {
   TTLOG(@"ERROR: %@", error);
   [self removeLoader:loader];
-  [loader dispatchError:error];
+  [loader dispatchError:error response:response data:data];
   [self loadNextInQueue];
 }
 
