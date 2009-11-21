@@ -616,13 +616,8 @@
         NSRange lineRange = NSMakeRange(lineStartIndex, (wordRange.location + wordRange.length)
                                                         - lineStartIndex);
         NSString* line = !_lineWidth ? word : [text substringWithRange:lineRange];
-		  /*
         [self addFrameForText:line element:element node:textNode width:frameWidth
               height:[_font lineHeight]];
-		   */
-		  [self addFrameForText:line  element:element  node:textNode
-						  width:frameWidth   height:_lineHeight ? _lineHeight : [_font
-																				 lineHeight]]; 
         frameWidth = 0;
       }
     }

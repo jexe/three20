@@ -274,7 +274,7 @@ static const CGFloat kCancelHighlightThreshold = 4;
 
 - (void)layoutSubviews {
   [super layoutSubviews];
-  CGFloat newWidth = self.bounds.size.width - (_contentInset.left + _contentInset.right);
+  CGFloat newWidth = self.width - (_contentInset.left + _contentInset.right);
   if (newWidth != _text.width) {
     // Remove the highlighted node+frame when resizing the text
     self.highlightedNode = nil;
