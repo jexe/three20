@@ -18,7 +18,8 @@ static const NSInteger kActivityLabelTag = 96;
 @implementation TTPhotoViewController
 
 @synthesize photoSource = _photoSource, centerPhoto = _centerPhoto,
-  centerPhotoIndex = _centerPhotoIndex, defaultImage = _defaultImage, captionStyle = _captionStyle;
+  centerPhotoIndex = _centerPhotoIndex, defaultImage = _defaultImage, captionStyle = _captionStyle,
+  showThumbnailButton = _showThumbnailButton;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // private
@@ -71,7 +72,7 @@ static const NSInteger kActivityLabelTag = 96;
   }
 
   if (![self.previousViewController isKindOfClass:[TTThumbsViewController class]]) {
-    if (_photoSource.numberOfPhotos > 1) {
+    if (_photoSource.numberOfPhotos > 1 && _showThumbnailButton) {
       self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc]
         initWithTitle:TTLocalizedString(@"See All", @"See all photo thumbnails")
         style:UIBarButtonItemStyleBordered target:self action:@selector(showThumbnails)];

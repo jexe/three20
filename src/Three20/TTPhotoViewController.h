@@ -23,7 +23,13 @@
   NSTimer* _slideshowTimer;
   NSTimer* _loadTimer;
   BOOL _delayLoad;
+  BOOL _showThumbnailButton;
 }
+
+/** 
+ * Whether the controller should offer the thumbnail list from a button on the navigation bar.
+ */
+@property (assign) BOOL showThumbnailButton;
 
 /**
  * The source of a sequential photo collection that will be displayed.
