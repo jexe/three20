@@ -39,8 +39,10 @@ BOOL TTIsEmptyString(id object) {
 }
 
 BOOL TTIsKeyboardVisible() {
-  UIWindow* window = [UIApplication sharedApplication].keyWindow;
-  return !![window performSelector:@selector(firstResponder)];
+  // Operates on the assumption that the keyboard is visible if and only if there is a first
+  // responder; i.e. a control responding to key events
+  UIWindow *window = [UIApplication sharedApplication].keyWindow;
+  return !![window findFirstResponder];
 }
 
 BOOL TTIsPhoneSupported() {
@@ -257,7 +259,7 @@ NSString* TTFormatInteger(NSInteger num) {
 }
 
 NSString* TTDescriptionForError(NSError* error) {
-  TTLOG(@"ERROR %@", error);
+  TTDINFO(@"ERROR %@", error);
   if ([error.domain isEqualToString:NSURLErrorDomain]) {
     if (error.code == NSURLErrorTimedOut) {
       return TTLocalizedString(@"Connection Timed Out", @"");

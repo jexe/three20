@@ -23,6 +23,7 @@
   BOOL _shouldHandleCookies;
   BOOL _respondedFromCache;
   BOOL _multipartForm;
+  BOOL _filterPasswordLogging;
 }
 
 /**
@@ -96,6 +97,11 @@
 
 @property(nonatomic) BOOL respondedFromCache;
 
+/**
+ * Whether parameters named "password" should be suppressed in log messages.
+ */
+@property(nonatomic,assign) BOOL filterPasswordLogging;
+
 + (TTURLRequest*)request;
 
 + (TTURLRequest*)requestWithURL:(NSString*)URL delegate:(id<TTURLRequestDelegate>)delegate;
@@ -118,6 +124,16 @@
  * @return YES if the request was loaded synchronously from the cache.
  */
 - (BOOL)send;
+
+/**
+ * Attempts to send a Synchronous request.
+ *
+ * The request will happen Synchronously, regardless of whether the data is being grabbed from
+ * the network or from the cache.
+ *
+ * @return YES if the request was loaded from the cache.
+ */
+- (BOOL)sendSynchronously;
 
 /**
  * Cancels the request.

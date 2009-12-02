@@ -17,7 +17,7 @@ static NSString* kStringBoundary = @"3i2ndDfv2rTHiSisAbouNdArYfORhtTPEefj3q2f";
   timestamp = _timestamp, userInfo = _userInfo, isLoading = _isLoading,
   shouldHandleCookies = _shouldHandleCookies, totalBytesLoaded = _totalBytesLoaded,
   totalBytesExpected = _totalBytesExpected, respondedFromCache = _respondedFromCache,
-  headers = _headers, multipartForm = _multipartForm;
+  headers = _headers, filterPasswordLogging = _filterPasswordLogging, multipartForm = _multipartForm;
 
 + (TTURLRequest*)request {
   return [[[TTURLRequest alloc] init] autorelease];
@@ -49,7 +49,7 @@ static NSString* kStringBoundary = @"3i2ndDfv2rTHiSisAbouNdArYfORhtTPEefj3q2f";
     _files = nil;
     _response = nil;
     _cachePolicy = TTURLRequestCachePolicyDefault;
-    _cacheExpirationAge = 0;
+    _cacheExpirationAge = TT_DEFAULT_CACHE_EXPIRATION_AGE;
     _timestamp = nil;
     _cacheKey = nil;
     _userInfo = nil;
@@ -58,6 +58,7 @@ static NSString* kStringBoundary = @"3i2ndDfv2rTHiSisAbouNdArYfORhtTPEefj3q2f";
     _totalBytesLoaded = 0;
     _totalBytesExpected = 0;
     _respondedFromCache = NO;
+    _filterPasswordLogging = NO;
   }
   return self;
 }
@@ -181,8 +182,8 @@ static NSString* kStringBoundary = @"3i2ndDfv2rTHiSisAbouNdArYfORhtTPEefj3q2f";
   if (imageKey) {
     [_parameters removeObjectForKey:imageKey];
   }
-  
-  //TTLOG(@"Sending %s", [body bytes]);
+
+  //TTDINFO(@"Sending %s", [body bytes]);
   return body;
 }
 
@@ -269,9 +270,23 @@ static NSString* kStringBoundary = @"3i2ndDfv2rTHiSisAbouNdArYfORhtTPEefj3q2f";
 
 - (BOOL)send {
   if (_parameters) {
-    TTLOG(@"SEND %@ %@", self.URL, self.parameters);
+    // Don't log passwords. Save now, restore after logging
+    NSString *password = [_parameters objectForKey:@"password"];
+    if (_filterPasswordLogging && password) {
+      [_parameters setObject:@"[FILTERED]" forKey:@"password"];
+    }
+
+    TTDINFO(@"SEND %@ %@", self.URL, self.parameters);
+
+    if (password) {
+      [_parameters setObject:password forKey:@"password"];
+    }
   }
   return [[TTURLRequestQueue mainQueue] sendRequest:self];
+}
+
+- (BOOL)sendSynchronously {
+  return [[TTURLRequestQueue mainQueue] sendSynchronousRequest:self];
 }
 
 - (void)cancel {
