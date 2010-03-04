@@ -187,16 +187,30 @@ static NSString* kStringBoundary = @"3i2ndDfv2rTHiSisAbouNdArYfORhtTPEefj3q2f";
   return body;
 }
 
+- (NSString*)stringByEscapingForURLArgument:(NSString*)arg {
+	// Encode all the reserved characters, per RFC 3986
+	// (<http://www.ietf.org/rfc/rfc3986.txt>)
+	NSString *escaped = 
+    (NSString*)CFURLCreateStringByAddingPercentEscapes(kCFAllocatorDefault,
+                                                       (CFStringRef)arg,
+                                                       NULL,
+                                                       (CFStringRef)@"!*'();:@&=+$,/?%#[]",
+                                                       kCFStringEncodingUTF8);
+	return [escaped autorelease];
+}
+
+
 - (NSData *)generateURLEncodedBody {
-  NSMutableString *body = [NSMutableString string];
-  for (NSString *key in [_parameters allKeys]) {
-    if (body.length > 0)
-      [body appendString:@"&"];
-    [body appendString:[NSString stringWithFormat:@"%@=%@", 
-                        [key stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding], 
-                        [[_parameters objectForKey:key] stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding]]];
-  }
-  return [body dataUsingEncoding:NSUTF8StringEncoding];
+	NSMutableString *body = [NSMutableString string];
+	for (NSString *key in [_parameters allKeys]) {
+		if (body.length > 0) {
+			[body appendString:@"&"];
+		}
+		[body appendString:[NSString stringWithFormat:@"%@=%@",
+							[self stringByEscapingForURLArgument:key], 
+							[self stringByEscapingForURLArgument:[_parameters objectForKey:key]]]]; 
+	}
+	return [body dataUsingEncoding:NSUTF8StringEncoding];
 }
 
 
