@@ -209,7 +209,7 @@ static TTURLRequestQueue* gMainQueue = nil;
   } else {
     TTDINFO(@"  FAILED LOADING (%d) %@", _response.statusCode, _URL);
     NSError* error = [NSError errorWithDomain:NSURLErrorDomain code:_response.statusCode
-                                     userInfo:nil];
+                                     userInfo:[NSMutableDictionary dictionaryWithCapacity:1]];
     [_queue loader:self didFailLoadWithError:error response:_response data:_responseData];
   }
   
