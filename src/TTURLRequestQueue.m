@@ -273,12 +273,17 @@ static TTURLRequestQueue* gMainQueue = nil;
 
   if (nil != error) {
     TTNetworkRequestStopped();
+	  
+	[_queue loader:self didFailLoadWithError:error response:response data:data];
+
 
     TT_RELEASE_SAFELY(_responseData);
     TT_RELEASE_SAFELY(_connection);
 
+	  /*
     [_queue performSelector:@selector(loader:didFailLoadWithError:) withObject:self
             withObject:error];
+	   */
   } else {
     [self connection:nil didReceiveResponse:(NSHTTPURLResponse*)response];
     [self connection:nil didReceiveData:data];
